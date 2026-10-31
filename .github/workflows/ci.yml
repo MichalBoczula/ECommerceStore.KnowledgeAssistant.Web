@@ -15,7 +15,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run check:contract
+      - run: npm run check:clients
       - run: npm run format:check
       - run: npm test -- --watch=false
       - run: npm run build

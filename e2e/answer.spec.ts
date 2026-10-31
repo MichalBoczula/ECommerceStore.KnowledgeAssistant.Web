@@ -26,10 +26,7 @@ test('renders sourced validation and an expandable JSON contract', async ({ page
   await page.getByRole('button', { name: 'Tree', exact: true }).click();
   await page.getByRole('button', { name: 'Expand all', exact: true }).click();
   await expect(page.locator('ka-json-viewer')).toContainText('storageGb');
-  await page
-    .getByRole('button', { name: /\[1\] Source/ })
-    .first()
-    .click();
+  await page.locator('.citations button').first().click();
   await expect(page.locator('.source-panel')).toHaveAttribute('open', '');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

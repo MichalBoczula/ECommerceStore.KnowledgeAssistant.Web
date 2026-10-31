@@ -21,19 +21,61 @@ field-level validation rules, schema/example tabs, read-only expandable JSON,
 copy, collapsible sections and source provenance. The JSON editor is loaded lazily.
 Requests are cancelled when context changes; mismatched snapshot responses are rejected.
 
-## Shared response schema
+## Feature structure
 
-The API exports `contracts/answer.schema.json`. Copy a reviewed schema change into
-this repository, then run:
+This app follows `ecommerce-store-web` feature boundaries:
+
+| Folder | Responsibility |
+| --- | --- |
+| `features/knowledge/domain/` | UI models, query model, repository port and stable errors. |
+| `features/knowledge/application/` | Facade consumed by the page. |
+| `features/knowledge/state/` | NgRx actions, feature reducer, effects and request cancellation. |
+| `features/knowledge/infrastructure/` | Kiota repository and DTO/domain mappers. |
+| `features/knowledge/presentation/` | Knowledge page and view-only interactions. |
+| `shared/infrastructure/api-clients/knowledge/` | Committed Kiota-generated client. |
+| `shared/presentation/` | Reusable read-only JSON viewer. |
+
+The root component is a router outlet. The route composes feature providers and loads
+the page lazily. The page calls its facade; effects use the repository port. Only the
+infrastructure repository knows Kiota. Mappers isolate optional generated DTOs from
+required UI models. API keys stay in the same-origin server proxy.
+See [the architecture decision](docs/adr/0001-feature-layers-and-kiota.md).
+
+## OpenAPI and Kiota
+
+The Python API owns `contracts/openapi.json`. This repository vendors the exact reviewed
+artifact at `contracts/upstream/knowledge-assistant.openapi.json`; `source.json` pins
+its API commit and SHA-256. The generated client includes catalog/query DTOs and
+`application/problem+json` error mappings. The UI branches on problem `code` and shows
+`traceId` for correlation; it never presents raw provider errors.
+
+After an API contract change:
 
 ```bash
-npm run generate:contract
-npm run check:contract
+# In the API checkout:
+uv run knowledge export-contract
+# Commit and push the reviewed API change, then in this Web checkout:
+node scripts/update-contract.mjs ../ECommerceStore.KnowledgeAssistant.Api/contracts/openapi.json API_COMMIT_SHA
+npm run generate:clients
+# Review mappers and tests; commit the artifact, manifest and generated client together.
+npm run check:clients
 ```
 
-`src/app/api.generated.ts` is generated and must not be edited manually.
-The frontend supports response schema version 1. `contracts/demo-answer.json` is a
-synthetic response generated through the real Python API for contract/UI testing.
+Generation pins Kiota **1.37.0** and verifies the Linux x64 download checksum. Other
+platforms set `KIOTA_BIN` to that version's executable. Run scripts in Bash (WSL/Git Bash
+on Windows). Generated files are never edited manually. CI regenerates and rejects
+changed or untracked generated files. Normal application builds use committed clients.
+
+A deterministic, consumer-only compatibility view is created in `.tools/`: it inlines
+Pydantic's all-JSON union, normalizes nullable scalar unions, and gives array section
+variants a discriminated base for Kiota TypeScript parsing. The original OpenAPI file
+remains byte-for-byte intact. Repository tests run the real generated serializers and
+parsers, check all section kinds and JSON examples (objects, arrays, primitives and
+null), and verify the resulting contract/schema values against the wire response.
+This step is specific to the pinned generator and must be reviewed when it changes.
+
+`contracts/demo-answer.json` is a synthetic answer from the real local API for UI tests.
+The frontend supports response schema version 1.
 
 ## Verify
 
@@ -45,8 +87,9 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Unit tests exercise API context, stale request cancellation, missing evidence,
-response scope, upstream failures and unsafe source URLs. Browser checks exercise
+Unit tests exercise NgRx/facade context, stale request cancellation, response scope,
+Problem Details codes, generated request serialization, generated response parsing,
+JSON preservation, fetch abort and unsafe source URLs. Browser checks exercise
 validation/contract rendering, schema/raw JSON, tree expansion, provenance and
 responsive layout using the reviewed synthetic response. They do not claim live
 Azure retrieval. A real Python-to-Angular flow can be exercised through the local proxy.
