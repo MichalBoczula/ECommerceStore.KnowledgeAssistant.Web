@@ -113,3 +113,34 @@ Infrastructure and runtime secrets belong to `ECommerceStore.Terraform`.
 [Editable desktop and mobile Figma screens](https://www.figma.com/design/R3QdHpq0dCZnHqWv5JIQxD?node-id=5-5650)
 use Material 3 components, Roboto and Roboto Mono. Source layout follows the approved
 numbered validation/contract panel, with explicit demo and evidence-limit labels.
+
+## CI and Docker publication
+
+CI follows the storefront Web and Users pattern: dependency review on pull requests,
+repository-history secret scanning, source/build/contract checks, separate test jobs,
+and a required quality gate. The image job builds once, smoke-tests and scans that
+local image for fixable high/critical vulnerabilities, then publishes the same image
+after a successful push to `main`. Pull requests build and scan without Docker Hub login
+or publishing. Test results are uploaded as JUnit artifacts, including on failures.
+
+Configure these existing repository Actions secrets:
+
+- `DOCKER_USER`: Docker Hub account with push access to `mb0101/ecommerce-store-knowledge-assistant-web`.
+- `DOCKER_TOKEN`: that account's Docker Hub access token.
+
+Successful main runs publish `mb0101/ecommerce-store-knowledge-assistant-web:<full-commit-sha>`
+and `:latest`, verify both push digests match, and attach `image-reference.json` in the
+`image-reference` workflow artifact. The artifact records the immutable
+`docker.io/mb0101/ecommerce-store-knowledge-assistant-web@sha256:...` reference,
+source commit and scanned image ID. Use the digest reference for deployment.
+
+Add its `knowledge_web` entry to your existing Terraform `app_images` map, preserving
+all other app entries. Run plan/apply from `ECommerceStore.Terraform` with its existing
+Azure Storage backend and deployment variables. This application CI owns image
+publication; Azure credentials, infrastructure deployment and state remain in that
+Terraform checkout.
+
+The Web image smoke test checks Nginx health, SPA fallback, favicon and built JavaScript. Query rendering is covered separately by desktop/mobile Playwright tests. The server proxy injects the API key at runtime; browser assets receive no API/model/Search credentials.
+
+The same local CI entry points are available in `scripts/ci.sh`.
+
