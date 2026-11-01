@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { RetryHandlerOptions } from '@microsoft/kiota-http-fetchlibrary';
 import {
   createKnowledgeApiClient,
   KnowledgeApiClient,
@@ -20,7 +21,14 @@ export class KnowledgeKiotaRepository implements KnowledgeRepository {
     return this.execute(async (api) => mapCatalog(await api.api.v1.catalog.get()));
   }
   query(request: KnowledgeQuery): Observable<Answer> {
-    return this.execute(async (api) => mapAnswer(await api.api.v1.query.post(request)));
+    // A repeated query can repeat model work. Let the user retry after the error is shown.
+    return this.execute(async (api) =>
+      mapAnswer(
+        await api.api.v1.query.post(request, {
+          options: [new RetryHandlerOptions({ maxRetries: 0 })],
+        }),
+      ),
+    );
   }
   private execute<T>(operation: (api: KnowledgeApiClient) => Promise<T>): Observable<T> {
     return new Observable((subscriber) => {

@@ -19,6 +19,9 @@ Answer section order is preserved from the API. Validation, contracts, explanati
 and expected/observed scenarios remain distinct. Expand/collapse affects presentation
 only. Changing query context clears the answer through the existing NgRx flow and
 destroys its viewers. No interaction with tabs, citations or copy sends another query.
+The repository disables Kiota's automatic retries for query POSTs so a failed query
+does not silently repeat model work. The page offers an explicit retry action;
+catalog GET requests keep the existing transport behavior.
 
 ## Contract metadata
 
