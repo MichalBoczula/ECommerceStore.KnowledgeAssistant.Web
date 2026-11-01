@@ -66,183 +66,28 @@
     <div class="notice error" role="alert">
       <strong>We couldn’t load a verified answer.</strong>
       <p>{{ error() }}</p>
+      @if (catalog()) {
+        <button type="button" (click)="ask()" [disabled]="!canAsk()">Try question again</button>
+      }
       <button type="button" (click)="loadCatalog()">Refresh connection</button>
     </div>
   }
   @if (loading()) {
-    <p class="loading" role="status">Retrieving documentation and preparing your answer…</p>
+    <div class="loading" role="status">
+      <span class="loading-dot" aria-hidden="true"></span>Preparing an answer from the selected
+      documentation…
+    </div>
   }
   @if (answer(); as result) {
-    <section class="answer" aria-label="Knowledge answer">
-      <div class="answer-heading">
-        <div>
-          <p class="eyebrow">ANSWER</p>
-          <h2>{{ askedQuestion() }}</h2>
-        </div>
-        <div class="answer-badges">
-          <span class="badge">{{ result.status.replace('_', ' ') }}</span
-          ><span class="badge">{{
-            result.answerMode === 'evidence' ? 'Evidence view' : 'Model synthesis'
-          }}</span>
-        </div>
-      </div>
-      @if (result.isDemo) {
-        <p class="notice">
-          This answer uses synthetic demonstration documentation. It does not describe your deployed
-          Products API.
-        </p>
-      }
-      @if (result.status === 'not_found') {
-        <div class="empty-answer">
-          <h3>No supporting documentation found</h3>
-          <p>Try a more specific question, another service or another snapshot.</p>
-        </div>
-      }
-      @for (section of result.sections; track $index; let index = $index) {
-        <details class="answer-section" open>
-          <summary>
-            <span class="section-number">{{ index + 1 }}</span>
-            <h3>{{ section.title }}</h3>
-            <span class="section-kind">{{ sectionLabel(section.type) }}</span
-            ><span class="toggle" aria-hidden="true"></span>
-          </summary>
-          <div class="section-content">
-            @switch (section.type) {
-              @case ('explanation') {
-                <p class="prose">{{ section.content }}</p>
-              }
-              @case ('validation') {
-                <div class="rule-list">
-                  @for (rule of section.rules; track $index) {
-                    <div class="rule">
-                      <code>{{ rule.field }}</code>
-                      <div>
-                        <p>{{ rule.description }}</p>
-                        <div class="citations">
-                          @for (id of rule.sourceIds; track id) {
-                            <button type="button" (click)="showSource(id)">
-                              [{{ sourceNumber(id) }}] Source
-                            </button>
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-              @case ('api_contract') {
-                <div class="operation">
-                  <span class="method">{{ section.method }}</span
-                  ><code>{{ section.path }}</code
-                  ><span>{{ section.mediaType }}</span>
-                </div>
-                <div class="contract-tabs" role="group" aria-label="Contract content">
-                  <button
-                    type="button"
-                    [attr.aria-pressed]="contractTab(index) === 'example'"
-                    (click)="selectContract(index, 'example')"
-                  >
-                    Example request</button
-                  ><button
-                    type="button"
-                    [attr.aria-pressed]="contractTab(index) === 'schema'"
-                    (click)="selectContract(index, 'schema')"
-                  >
-                    Request schema
-                  </button>
-                </div>
-                @if (contractTab(index) === 'example') {
-                  @if (section.exampleRequest !== null) {
-                    <ka-json-viewer
-                      [value]="section.exampleRequest"
-                      [label]="'Example request for ' + section.path"
-                    />
-                    <p class="contract-note">
-                      {{
-                        section.exampleOrigin === 'generated'
-                          ? 'Generated example'
-                          : 'Documented OpenAPI example'
-                      }}
-                      ·
-                      {{
-                        section.exampleSchemaValid ? 'Schema checked' : 'Schema validation failed'
-                      }}
-                    </p>
-                  } @else {
-                    <p class="notice">
-                      No schema-valid example request is available. Open the request schema to
-                      inspect the documented contract.
-                    </p>
-                  }
-                } @else {
-                  <ka-json-viewer
-                    [value]="section.requestSchema"
-                    [label]="'Request schema for ' + section.path"
-                  />
-                }
-              }
-              @case ('scenario') {
-                <pre class="scenario">{{ section.content }}</pre>
-                @if (section.executionStatus) {
-                  <p class="contract-note">Observed execution: {{ section.executionStatus }}</p>
-                }
-              }
-            }
-            <div class="section-sources">
-              <span>Supporting documentation</span>
-              @for (id of section.sourceIds; track id) {
-                <button type="button" (click)="showSource(id)">
-                  [{{ sourceNumber(id) }}] {{ sourceTitle(id) }}
-                </button>
-              }
-            </div>
-          </div>
-        </details>
-      }
-      @if (result.limitations.length) {
-        <aside class="limitations">
-          <h3>Evidence and limits</h3>
-          <ul>
-            @for (limitation of result.limitations; track $index) {
-              <li>{{ limitation }}</li>
-            }
-          </ul>
-        </aside>
-      }
-      <details class="source-panel" [open]="expandedSource() !== null">
-        <summary>
-          Sources and provenance
-          <span>{{ result.sources.length }} references · {{ result.snapshotId }}</span>
-        </summary>
-        <div>
-          @for (source of result.sources; track source.id; let index = $index) {
-            <article [class.selected]="expandedSource() === source.id">
-              <h4>[{{ index + 1 }}] {{ source.title }}</h4>
-              <dl>
-                <dt>Source</dt>
-                <dd>{{ source.path }}</dd>
-                <dt>Snapshot</dt>
-                <dd>{{ source.snapshotId }}</dd>
-                <dt>Commit</dt>
-                <dd>
-                  <code>{{ source.commitSha }}</code>
-                </dd>
-              </dl>
-              @if (safeUrl(source.url); as url) {
-                <a [href]="url" target="_blank" rel="noopener noreferrer">Open LiveDocs ↗</a>
-              }
-            </article>
-          }
-        </div>
-      </details>
-      <p class="request-id">Request {{ result.requestId }}</p>
-    </section>
-  } @else if (!loading() && !error()) {
+    <ka-answer-panel [answer]="result" [question]="askedQuestion()" />
+  } @else if (!loading() && !error() && catalog()) {
     <div class="starting-point">
       <span aria-hidden="true">{{ '{ }' }}</span>
-      <p>Ask your first question to see validation rules, contracts and their sources.</p>
-      <button type="button" (click)="useExample()">Try the mobile phone example ↗</button>
+      <p>Ask your first question to see business rules, contracts and their sources.</p>
+      <button type="button" (click)="useExample()">Try the {{ exampleLabel() }} example ↗</button>
     </div>
+  } @else if (!catalog() && !error()) {
+    <p class="loading" role="status">Loading available documentation…</p>
   }
 </main>
 <footer>Versioned knowledge. Traceable answers.</footer>

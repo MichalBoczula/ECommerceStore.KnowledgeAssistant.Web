@@ -117,6 +117,23 @@ describe('Knowledge Kiota repository', () => {
     pending.unsubscribe();
     expect(signal.aborted).toBe(true);
   });
+  it('surfaces a 503 without automatically repeating the query', async () => {
+    const { repository, fetchMock } = setup(
+      {
+        type: 'about:blank',
+        title: 'Service Unavailable',
+        status: 503,
+        code: 'answer_verification_failed',
+        traceId: 'trace-503',
+      },
+      503,
+    );
+    await expect(firstValueFrom(repository.query(request))).rejects.toMatchObject({
+      code: 'answer_verification_failed',
+      traceId: 'trace-503',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it('rejects unsupported response versions', async () => {
     const { repository } = setup({ ...demo, schemaVersion: 2 });
     await expect(firstValueFrom(repository.query(request))).rejects.toMatchObject({

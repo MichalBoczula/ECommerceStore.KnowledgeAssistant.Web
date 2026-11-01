@@ -1,0 +1,124 @@
+<div class="operation">
+  <span class="method">{{ section.method }}</span>
+  <code class="path">{{ section.path }}</code>
+  @if (section.mediaType) {
+    <span class="media">{{ section.mediaType }}</span>
+  }
+</div>
+<p class="operation-id">
+  Operation <code>{{ section.operationId }}</code>
+</p>
+@if (!hasExample()) {
+  <p class="contract-notice">
+    {{
+      !hasRequestBody()
+        ? 'No request body is documented for this operation.'
+        : 'No request example is available. The documented schema is shown below.'
+    }}
+  </p>
+}
+<div class="contract-tabs" role="tablist" aria-label="Contract content" (keydown)="keydown($event)">
+  <button
+    #tabButton
+    type="button"
+    role="tab"
+    data-tab="example"
+    [id]="id + '-example-tab'"
+    [attr.aria-controls]="id + '-example-panel'"
+    [attr.aria-selected]="active() === 'example'"
+    [tabIndex]="active() === 'example' ? 0 : -1"
+    [disabled]="!hasExample()"
+    (click)="select('example')"
+  >
+    Example request
+  </button>
+  <button
+    #tabButton
+    type="button"
+    role="tab"
+    data-tab="schema"
+    [id]="id + '-schema-tab'"
+    [attr.aria-controls]="id + '-schema-panel'"
+    [attr.aria-selected]="active() === 'schema'"
+    [tabIndex]="active() === 'schema' ? 0 : -1"
+    (click)="select('schema')"
+  >
+    Request schema
+  </button>
+  @if (hasReferences()) {
+    <button
+      #tabButton
+      type="button"
+      role="tab"
+      data-tab="references"
+      [id]="id + '-references-tab'"
+      [attr.aria-controls]="id + '-references-panel'"
+      [attr.aria-selected]="active() === 'references'"
+      [tabIndex]="active() === 'references' ? 0 : -1"
+      (click)="select('references')"
+    >
+      Referenced schemas
+    </button>
+  }
+</div>
+<div
+  role="tabpanel"
+  [id]="id + '-example-panel'"
+  [attr.aria-labelledby]="id + '-example-tab'"
+  [hidden]="active() !== 'example'"
+  tabindex="0"
+>
+  @if (active() === 'example' && hasExample()) {
+    <div class="example-meta">
+      <span class="origin">{{
+        section.exampleOrigin === 'generated' ? 'Generated example' : 'Documented OpenAPI example'
+      }}</span>
+      <span
+        class="verification"
+        [class.failed]="section.exampleSchemaValid === false"
+        [class.checked]="section.exampleSchemaValid === true"
+        >{{ validationLabel() }}</span
+      >
+    </div>
+    <ka-json-viewer
+      [value]="section.exampleRequest"
+      [label]="'Example request for ' + section.path"
+    />
+    @if (section.exampleOrigin === 'generated') {
+      <p class="contract-note">
+        Generated from the documented schema. Business validation and successful API execution are
+        not confirmed.
+      </p>
+    }
+  }
+</div>
+<div
+  role="tabpanel"
+  [id]="id + '-schema-panel'"
+  [attr.aria-labelledby]="id + '-schema-tab'"
+  [hidden]="active() !== 'schema'"
+  tabindex="0"
+>
+  @if (active() === 'schema') {
+    <ka-json-viewer
+      [value]="section.requestSchema"
+      [label]="'Request schema for ' + section.path"
+    />
+  }
+</div>
+@if (hasReferences()) {
+  <div
+    role="tabpanel"
+    [id]="id + '-references-panel'"
+    [attr.aria-labelledby]="id + '-references-tab'"
+    [hidden]="active() !== 'references'"
+    tabindex="0"
+  >
+    @if (active() === 'references') {
+      <p class="contract-note">
+        Local definitions used by <code>#/components/schemas/…</code> references.
+      </p>
+      <ka-json-viewer [value]="references" [label]="'Referenced schemas for ' + section.path" />
+    }
+  </div>
+}

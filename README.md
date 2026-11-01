@@ -18,7 +18,11 @@ no answer is fabricated when the API fails. API keys never belong in Angular ass
 
 The panel offers service/snapshot context, numbered typed answer sections,
 field-level validation rules, schema/example tabs, read-only expandable JSON,
-copy, collapsible sections and source provenance. The JSON editor is loaded lazily.
+copy, collapsible sections and source provenance. Citations open and focus their source
+card, with a return-to-answer action. Contract tabs support keyboard navigation and local
+referenced schemas. Available JSON `null` examples are rendered using their origin metadata;
+missing, invalid and unverified examples have distinct presentation states.
+The JSON editor is loaded lazily and keeps a raw-text fallback.
 Requests are cancelled when context changes; mismatched snapshot responses are rejected.
 
 ## Feature structure
@@ -40,6 +44,9 @@ the page lazily. The page calls its facade; effects use the repository port. Onl
 infrastructure repository knows Kiota. Mappers isolate optional generated DTOs from
 required UI models. API keys stay in the same-origin server proxy.
 See [the architecture decision](docs/adr/0001-feature-layers-and-kiota.md).
+The question page composes focused answer-panel, contract-viewer and source-citation
+components. Their disclosure/tab/focus state remains in presentation; NgRx owns query
+and context state. See [the answer panel guide](docs/answer-panel.md).
 
 ## OpenAPI and Kiota
 
@@ -91,7 +98,10 @@ Unit tests exercise NgRx/facade context, stale request cancellation, response sc
 Problem Details codes, generated request serialization, generated response parsing,
 JSON preservation, fetch abort and unsafe source URLs. Browser checks exercise
 validation/contract rendering, schema/raw JSON, tree expansion, provenance and
-responsive layout using the reviewed synthetic response. They do not claim live
+responsive layout, null/missing examples, referenced schemas, keyboard/source focus,
+partial/not-found answers, retry behavior and JSON copy using synthetic responses.
+The browser artifact also contains desktop/mobile screenshots for visual review.
+These tests do not claim live
 Azure retrieval. A real Python-to-Angular flow can be exercised through the local proxy.
 
 ## Host
@@ -147,4 +157,3 @@ Terraform checkout.
 The Web image smoke test checks Nginx health, SPA fallback, favicon and built JavaScript. Query rendering is covered separately by desktop/mobile Playwright tests. The server proxy injects the API key at runtime; browser assets receive no API/model/Search credentials.
 
 The same local CI entry points are available in `scripts/ci.sh`.
-

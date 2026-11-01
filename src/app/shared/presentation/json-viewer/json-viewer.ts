@@ -12,7 +12,12 @@ import type { JsonEditor } from 'vanilla-jsoneditor';
   selector: 'ka-json-viewer',
   template: `<div class="json-toolbar">
       <div>
-        <button type="button" [attr.aria-pressed]="mode() === 'tree'" (click)="setMode('tree')">
+        <button
+          type="button"
+          [disabled]="failed()"
+          [attr.aria-pressed]="mode() === 'tree'"
+          (click)="setMode('tree')"
+        >
           Tree</button
         ><button type="button" [attr.aria-pressed]="mode() === 'raw'" (click)="setMode('raw')">
           JSON
@@ -26,7 +31,13 @@ import type { JsonEditor } from 'vanilla-jsoneditor';
         ><button type="button" (click)="copy()">Copy JSON</button>
       </div>
     </div>
-    <div class="json-container" [attr.aria-label]="label">
+    <div class="json-container" role="region" [attr.aria-label]="label">
+      @if (!ready() && !failed() && mode() === 'tree') {
+        <p class="viewer-notice" role="status">Loading JSON tree…</p>
+      }
+      @if (failed()) {
+        <p class="viewer-notice">Interactive tree unavailable. Showing JSON text.</p>
+      }
       <div #host [hidden]="mode() !== 'tree' || !ready() || failed()"></div>
       @if (mode() === 'raw' || failed()) {
         <pre><code>{{raw()}}</code></pre>
@@ -53,7 +64,8 @@ import type { JsonEditor } from 'vanilla-jsoneditor';
       min-height: 80px;
       border: 1px solid var(--line);
       border-radius: 9px;
-      overflow: hidden;
+      overflow: auto;
+      max-height: 520px;
       background: var(--surface-soft);
       --jse-theme-color: var(--accent);
       --jse-background-color: var(--surface-soft);
@@ -81,6 +93,11 @@ import type { JsonEditor } from 'vanilla-jsoneditor';
       background: var(--accent);
       color: white;
       border-color: var(--accent);
+    }
+    .viewer-notice {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 8px 16px;
     }
   `,
 })
@@ -121,6 +138,7 @@ export class JsonViewer implements AfterViewInit, OnDestroy {
       this.ready.set(true);
     } catch {
       this.failed.set(true);
+      this.mode.set('raw');
     }
   }
   ngOnDestroy() {

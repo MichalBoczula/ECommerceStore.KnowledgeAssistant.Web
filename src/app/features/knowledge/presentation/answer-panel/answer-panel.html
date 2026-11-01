@@ -1,0 +1,175 @@
+<section class="answer" aria-label="Knowledge answer" [attr.aria-labelledby]="id + '-title'">
+  <div class="answer-heading">
+    <div>
+      <p class="eyebrow">YOUR ANSWER</p>
+      <h2 [id]="id + '-title'">{{ question }}</h2>
+    </div>
+    <div class="answer-badges">
+      <span class="badge" [class.partial]="answer.status === 'partial'" role="status">{{
+        statusLabel()
+      }}</span>
+      <span class="badge">{{
+        answer.answerMode === 'evidence' ? 'Evidence view' : 'Model synthesis'
+      }}</span>
+      <span class="badge">{{
+        answer.retrievalMode === 'azure_hybrid' ? 'Hybrid retrieval' : 'Keyword retrieval'
+      }}</span>
+    </div>
+  </div>
+  <p class="answer-context">
+    <span>{{ answer.service }}</span
+    ><span
+      >Snapshot <code>{{ answer.snapshotId }}</code></span
+    >
+  </p>
+  @if (answer.isDemo) {
+    <p class="notice demo">
+      <strong>Demonstration dataset.</strong> This answer uses synthetic documentation and does not
+      describe your deployed application.
+    </p>
+  }
+  @if (answer.status === 'partial') {
+    <div class="notice partial-notice">
+      <strong>Some requested information is missing or could not be verified.</strong>
+      <p>
+        Supported sections are shown below.
+        <a [href]="'#' + id + '-limits'">Review evidence and limits ↓</a>
+      </p>
+    </div>
+  }
+  @if (answer.status === 'not_found') {
+    <div class="empty-answer">
+      <span aria-hidden="true">⌕</span>
+      <h3>No supporting documentation found</h3>
+      <p>Try a specific operation name, another service or another documentation snapshot.</p>
+    </div>
+  }
+  @if (answer.sections.length) {
+    <div class="answer-tools">
+      <span>{{ answer.sections.length }} sections · {{ answer.sources.length }} sources</span>
+      <div>
+        <button type="button" (click)="setSectionsOpen(true)">Expand sections</button>
+        <button type="button" (click)="setSectionsOpen(false)">Collapse sections</button>
+      </div>
+    </div>
+  }
+  @for (section of answer.sections; track $index; let index = $index) {
+    <details #answerSection class="answer-section" open>
+      <summary>
+        <span class="section-number">{{ index + 1 }}</span>
+        <h3>{{ section.title }}</h3>
+        <span class="section-kind">{{ sectionLabel(section) }}</span
+        ><span class="toggle" aria-hidden="true"></span>
+      </summary>
+      <div class="section-content">
+        @switch (section.type) {
+          @case ('explanation') {
+            <p class="prose">{{ section.content }}</p>
+          }
+          @case ('validation') {
+            <div class="rule-list">
+              @for (rule of section.rules; track $index) {
+                <div class="rule">
+                  <code>{{ rule.field }}</code>
+                  <div>
+                    <p>{{ rule.description }}</p>
+                    <ka-source-citations
+                      [ids]="rule.sourceIds"
+                      [sources]="answer.sources"
+                      [compact]="true"
+                      [targetPrefix]="id + '-source-'"
+                      (selected)="showSource($event)"
+                    />
+                  </div>
+                </div>
+              }
+            </div>
+          }
+          @case ('api_contract') {
+            <ka-contract-viewer [section]="section" />
+          }
+          @case ('scenario') {
+            <div class="scenario-meta">
+              <span class="badge" [class.observed]="!!section.executionStatus">
+                {{
+                  section.executionStatus
+                    ? 'Observed run: ' + section.executionStatus
+                    : 'Expected business behavior'
+                }}</span
+              >
+            </div>
+            <pre class="scenario">{{ section.content }}</pre>
+          }
+        }
+        <ka-source-citations
+          [ids]="section.sourceIds"
+          [sources]="answer.sources"
+          [targetPrefix]="id + '-source-'"
+          (selected)="showSource($event)"
+        />
+      </div>
+    </details>
+  }
+  @if (answer.limitations.length) {
+    <aside class="limitations" [id]="id + '-limits'" tabindex="-1">
+      <h3>Evidence and limits</h3>
+      <ul>
+        @for (limitation of answer.limitations; track $index) {
+          <li>{{ limitation }}</li>
+        }
+      </ul>
+    </aside>
+  }
+  @if (answer.sources.length) {
+    <details #sourcePanel class="source-panel">
+      <summary>
+        Sources and provenance
+        <span>{{ answer.sources.length }} references · {{ answer.snapshotId }}</span>
+      </summary>
+      @if (selectedSource()) {
+        <button class="return-to-answer" type="button" (click)="returnToCitation()">
+          ↑ Back to cited answer
+        </button>
+      }
+      <div class="source-grid">
+        @for (source of answer.sources; track source.id; let index = $index) {
+          <article
+            #sourceCard
+            [id]="id + '-source-' + index"
+            [attr.data-source-id]="source.id"
+            [class.selected]="selectedSource() === source.id"
+            tabindex="-1"
+          >
+            <h4>[{{ index + 1 }}] {{ source.title }}</h4>
+            <dl>
+              <dt>Source</dt>
+              <dd>{{ source.path }}</dd>
+              <dt>Service</dt>
+              <dd>{{ source.service }}</dd>
+              <dt>Snapshot</dt>
+              <dd>
+                <code>{{ source.snapshotId }}</code>
+              </dd>
+              <dt>Commit</dt>
+              <dd>
+                <code>{{ source.commitSha }}</code>
+              </dd>
+            </dl>
+            <details class="fingerprint">
+              <summary>Archive fingerprint</summary>
+              <code>{{ source.bundleSha256 }}</code>
+            </details>
+            @if (liveDocsUrl(source.url); as url) {
+              <a [href]="url" target="_blank" rel="noopener noreferrer">Open LiveDocs ↗</a>
+            } @else {
+              <p class="no-source-link">LiveDocs link not provided.</p>
+            }
+          </article>
+        }
+      </div>
+    </details>
+  }
+  <p class="request-id">
+    Request reference <code>{{ answer.requestId }}</code>
+  </p>
+</section>
