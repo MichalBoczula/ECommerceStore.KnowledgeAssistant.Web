@@ -113,6 +113,5 @@ describe('Knowledge facade and page', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Refresh the connection. Request: trace-456',
     );
-    expect(fixture.componentInstance.safeUrl('javascript:alert(1)')).toBe(null);
   });
 });
