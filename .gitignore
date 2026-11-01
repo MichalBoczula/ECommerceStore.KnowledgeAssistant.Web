@@ -47,3 +47,6 @@ Thumbs.db
 /test-results
 
 .tools/
+/artifacts
+__pycache__/
+

@@ -6,3 +6,6 @@ playwright-report
 test-results
 
 .tools
+artifacts
+__pycache__
+
