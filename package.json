@@ -1,0 +1,49 @@
+{
+  "name": "ecommerce-store-knowledge-assistant-web",
+  "version": "0.1.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve --proxy-config proxy.conf.json",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "format": "prettier --write \"src/**/*.{ts,html,scss}\" \"e2e/**/*.ts\" \"scripts/**/*.mjs\" playwright.config.ts",
+    "format:check": "prettier --check \"src/**/*.{ts,html,scss}\" \"e2e/**/*.ts\" \"scripts/**/*.mjs\" playwright.config.ts",
+    "test:e2e": "playwright test",
+    "generate:clients": "bash scripts/generate-clients.sh",
+    "check:clients": "npm run generate:clients && node scripts/check-clients.mjs"
+  },
+  "private": true,
+  "packageManager": "npm@11.9.0",
+  "dependencies": {
+    "@angular/common": "^22.2.0",
+    "@angular/compiler": "^22.2.0",
+    "@angular/core": "^22.2.0",
+    "@angular/forms": "^22.2.0",
+    "@angular/platform-browser": "^22.2.0",
+    "@angular/router": "^22.2.0",
+    "@fontsource/roboto": "^5.3.0",
+    "@fontsource/roboto-mono": "^5.3.0",
+    "@microsoft/kiota-abstractions": "^1.0.0-preview.103",
+    "@microsoft/kiota-http-fetchlibrary": "^1.0.0-preview.103",
+    "@microsoft/kiota-serialization-form": "^1.0.0-preview.103",
+    "@microsoft/kiota-serialization-json": "^1.0.0-preview.103",
+    "@microsoft/kiota-serialization-multipart": "^1.0.0-preview.103",
+    "@microsoft/kiota-serialization-text": "^1.0.0-preview.103",
+    "@ngrx/effects": "^22.0.1",
+    "@ngrx/store": "^22.0.1",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "vanilla-jsoneditor": "^3.13.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.2.4",
+    "@angular/cli": "^22.2.4",
+    "@angular/compiler-cli": "^22.2.0",
+    "@playwright/test": "^1.64.1",
+    "jsdom": "^30.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.0"
+  }
+}

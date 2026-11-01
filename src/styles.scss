@@ -1,0 +1,66 @@
+@use '@fontsource/roboto/400.css' as robotoRegular;
+@use '@fontsource/roboto/500.css' as robotoMedium;
+@use '@fontsource/roboto-mono/400.css' as robotoMono;
+:root {
+  --background: #faf9fc;
+  --surface: #fff;
+  --surface-soft: #f5f3f8;
+  --ink: #25212d;
+  --muted: #726b7b;
+  --line: #e6e1eb;
+  --accent: #6750a4;
+  --accent-soft: #f0eaf8;
+  font-family: Roboto, system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--background);
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 7px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+code,
+pre {
+  font-family: 'Roboto Mono', monospace;
+}
+[hidden] {
+  display: none !important;
+}
+@media (pointer: coarse) {
+  button,
+  select {
+    min-height: 44px;
+  }
+}

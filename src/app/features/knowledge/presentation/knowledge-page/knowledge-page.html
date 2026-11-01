@@ -1,0 +1,248 @@
+<header class="site-header">
+  <a class="brand" href="/" aria-label="Knowledge Assistant home"
+    ><span class="brand-mark">{{ '{ k }' }}</span
+    ><span>Knowledge Assistant<small>E-COMMERCE STORE</small></span></a
+  ><span class="header-label">Developer workspace</span>
+</header>
+<main>
+  <section class="intro">
+    <p class="eyebrow">FROM EXECUTABLE DOCUMENTATION TO ANSWERS</p>
+    <h1>Understand the rules.<br /><span>Build with the right contract.</span></h1>
+    <p>
+      Explore business scenarios, validation policies and API contracts—with the evidence beside
+      every answer.
+    </p>
+  </section>
+  <form class="question-panel" (ngSubmit)="ask()">
+    <div class="context-controls">
+      <label
+        >Service<select
+          name="service"
+          [ngModel]="service()"
+          (ngModelChange)="changeService($event)"
+          [disabled]="!catalog()"
+        >
+          @for (item of currentSnapshot()?.services ?? []; track item) {
+            <option [value]="item">{{ serviceLabel(item) }}</option>
+          }
+        </select></label
+      ><label
+        >Documentation snapshot<select
+          name="snapshot"
+          [ngModel]="snapshotId()"
+          (ngModelChange)="changeSnapshot($event)"
+          [disabled]="!catalog()"
+        >
+          @for (snapshot of catalog()?.snapshots ?? []; track snapshot.id) {
+            <option [value]="snapshot.id">{{ snapshot.id }}</option>
+          }
+        </select></label
+      >
+      @if (currentSnapshot()?.isDemo) {
+        <span class="badge demo">Demonstration dataset</span>
+      }
+    </div>
+    <label class="question-label" for="question">What would you like to understand?</label
+    ><textarea
+      id="question"
+      name="question"
+      rows="3"
+      maxlength="4000"
+      [ngModel]="question()"
+      (ngModelChange)="facade.setQuestion($event)"
+      (keydown.control.enter)="ask()"
+      (keydown.meta.enter)="ask()"
+      placeholder="Explain mobile phone validation and show me the JSON request for creating one."
+    ></textarea>
+    <div class="submit-row">
+      <span>Answers use the selected documentation snapshot.</span
+      ><button class="primary" type="submit" [disabled]="!canAsk()">
+        {{ loading() ? 'Finding supporting evidence…' : 'Ask Knowledge Assistant'
+        }}<span aria-hidden="true">↗</span>
+      </button>
+    </div>
+  </form>
+  @if (error()) {
+    <div class="notice error" role="alert">
+      <strong>We couldn’t load a verified answer.</strong>
+      <p>{{ error() }}</p>
+      <button type="button" (click)="loadCatalog()">Refresh connection</button>
+    </div>
+  }
+  @if (loading()) {
+    <p class="loading" role="status">Retrieving documentation and preparing your answer…</p>
+  }
+  @if (answer(); as result) {
+    <section class="answer" aria-label="Knowledge answer">
+      <div class="answer-heading">
+        <div>
+          <p class="eyebrow">ANSWER</p>
+          <h2>{{ askedQuestion() }}</h2>
+        </div>
+        <div class="answer-badges">
+          <span class="badge">{{ result.status.replace('_', ' ') }}</span
+          ><span class="badge">{{
+            result.answerMode === 'evidence' ? 'Evidence view' : 'Model synthesis'
+          }}</span>
+        </div>
+      </div>
+      @if (result.isDemo) {
+        <p class="notice">
+          This answer uses synthetic demonstration documentation. It does not describe your deployed
+          Products API.
+        </p>
+      }
+      @if (result.status === 'not_found') {
+        <div class="empty-answer">
+          <h3>No supporting documentation found</h3>
+          <p>Try a more specific question, another service or another snapshot.</p>
+        </div>
+      }
+      @for (section of result.sections; track $index; let index = $index) {
+        <details class="answer-section" open>
+          <summary>
+            <span class="section-number">{{ index + 1 }}</span>
+            <h3>{{ section.title }}</h3>
+            <span class="section-kind">{{ sectionLabel(section.type) }}</span
+            ><span class="toggle" aria-hidden="true"></span>
+          </summary>
+          <div class="section-content">
+            @switch (section.type) {
+              @case ('explanation') {
+                <p class="prose">{{ section.content }}</p>
+              }
+              @case ('validation') {
+                <div class="rule-list">
+                  @for (rule of section.rules; track $index) {
+                    <div class="rule">
+                      <code>{{ rule.field }}</code>
+                      <div>
+                        <p>{{ rule.description }}</p>
+                        <div class="citations">
+                          @for (id of rule.sourceIds; track id) {
+                            <button type="button" (click)="showSource(id)">
+                              [{{ sourceNumber(id) }}] Source
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+              @case ('api_contract') {
+                <div class="operation">
+                  <span class="method">{{ section.method }}</span
+                  ><code>{{ section.path }}</code
+                  ><span>{{ section.mediaType }}</span>
+                </div>
+                <div class="contract-tabs" role="group" aria-label="Contract content">
+                  <button
+                    type="button"
+                    [attr.aria-pressed]="contractTab(index) === 'example'"
+                    (click)="selectContract(index, 'example')"
+                  >
+                    Example request</button
+                  ><button
+                    type="button"
+                    [attr.aria-pressed]="contractTab(index) === 'schema'"
+                    (click)="selectContract(index, 'schema')"
+                  >
+                    Request schema
+                  </button>
+                </div>
+                @if (contractTab(index) === 'example') {
+                  @if (section.exampleRequest !== null) {
+                    <ka-json-viewer
+                      [value]="section.exampleRequest"
+                      [label]="'Example request for ' + section.path"
+                    />
+                    <p class="contract-note">
+                      {{
+                        section.exampleOrigin === 'generated'
+                          ? 'Generated example'
+                          : 'Documented OpenAPI example'
+                      }}
+                      ·
+                      {{
+                        section.exampleSchemaValid ? 'Schema checked' : 'Schema validation failed'
+                      }}
+                    </p>
+                  } @else {
+                    <p class="notice">
+                      No schema-valid example request is available. Open the request schema to
+                      inspect the documented contract.
+                    </p>
+                  }
+                } @else {
+                  <ka-json-viewer
+                    [value]="section.requestSchema"
+                    [label]="'Request schema for ' + section.path"
+                  />
+                }
+              }
+              @case ('scenario') {
+                <pre class="scenario">{{ section.content }}</pre>
+                @if (section.executionStatus) {
+                  <p class="contract-note">Observed execution: {{ section.executionStatus }}</p>
+                }
+              }
+            }
+            <div class="section-sources">
+              <span>Supporting documentation</span>
+              @for (id of section.sourceIds; track id) {
+                <button type="button" (click)="showSource(id)">
+                  [{{ sourceNumber(id) }}] {{ sourceTitle(id) }}
+                </button>
+              }
+            </div>
+          </div>
+        </details>
+      }
+      @if (result.limitations.length) {
+        <aside class="limitations">
+          <h3>Evidence and limits</h3>
+          <ul>
+            @for (limitation of result.limitations; track $index) {
+              <li>{{ limitation }}</li>
+            }
+          </ul>
+        </aside>
+      }
+      <details class="source-panel" [open]="expandedSource() !== null">
+        <summary>
+          Sources and provenance
+          <span>{{ result.sources.length }} references · {{ result.snapshotId }}</span>
+        </summary>
+        <div>
+          @for (source of result.sources; track source.id; let index = $index) {
+            <article [class.selected]="expandedSource() === source.id">
+              <h4>[{{ index + 1 }}] {{ source.title }}</h4>
+              <dl>
+                <dt>Source</dt>
+                <dd>{{ source.path }}</dd>
+                <dt>Snapshot</dt>
+                <dd>{{ source.snapshotId }}</dd>
+                <dt>Commit</dt>
+                <dd>
+                  <code>{{ source.commitSha }}</code>
+                </dd>
+              </dl>
+              @if (safeUrl(source.url); as url) {
+                <a [href]="url" target="_blank" rel="noopener noreferrer">Open LiveDocs ↗</a>
+              }
+            </article>
+          }
+        </div>
+      </details>
+      <p class="request-id">Request {{ result.requestId }}</p>
+    </section>
+  } @else if (!loading() && !error()) {
+    <div class="starting-point">
+      <span aria-hidden="true">{{ '{ }' }}</span>
+      <p>Ask your first question to see validation rules, contracts and their sources.</p>
+      <button type="button" (click)="useExample()">Try the mobile phone example ↗</button>
+    </div>
+  }
+</main>
+<footer>Versioned knowledge. Traceable answers.</footer>
